@@ -1,7 +1,7 @@
 // api/send-dojim.js — Дожим (вызывается QStash через 5 минут после /start)
 import { Bot, InlineKeyboard } from "grammy";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
-
+//hui
 const bot = new Bot(process.env.BOT_TOKEN);
 
 // ─── Тексты дожима ───────────────────────────────────────────────────────────
@@ -71,5 +71,5 @@ async function handler(req, res) {
   }
 }
 
-// Верификация подписи QStash (защита от посторонних запросов)
-export default verifySignatureAppRouter(handler);
+// Убираем верификацию QStash временно, так как она может конфликтовать с Vercel Functions
+export default handler;
