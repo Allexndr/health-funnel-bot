@@ -1,7 +1,6 @@
-// api/send-dojim.js — Дожим (вызывается QStash через 5 минут после /start)
+// api/send-dojim.js — Дожим (вызывается QStash через 5 мин и 60 мин)
 import { Bot, InlineKeyboard } from "grammy";
-import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
-//hui
+
 const bot = new Bot(process.env.BOT_TOKEN);
 
 // ─── Тексты дожима ───────────────────────────────────────────────────────────
@@ -31,20 +30,18 @@ const OFFER_TEXT = `🌿 *Жить без Вздутия, Тяжести, Отё
 
 // ─── Основной обработчик ─────────────────────────────────────────────────────
 
-async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(200).json({ ok: true });
   }
 
   const body = req.body;
   const chatId = body?.chatId;
+  const step = body?.step; // Какая сейчас стадия воронки? (1 или 2)
 
   if (!chatId) {
     return res.status(400).json({ ok: false, error: "Missing chatId" });
   }
-
-  // URL картинки из Vercel public-папки
-  const imageUrl = `${process.env.WEBHOOK_URL.replace("/api/webhook", "")}/offer.png`;
 
   const keyboard = new InlineKeyboard().url(
     "✍️ ЗАПИСАТЬСЯ",
@@ -52,17 +49,23 @@ async function handler(req, res) {
   );
 
   try {
-    // Отправляем картинку до/после с подписью
-    await bot.api.sendPhoto(chatId, imageUrl, {
-      caption: DOJIM_CAPTION,
-      parse_mode: "MarkdownV2",
-    });
+    if (step === 1) {
+      // ШАГ 1: Через 5 минут отправляем ТОЛЬКО текстовый оффер про 30 мест
+      await bot.api.sendMessage(chatId, OFFER_TEXT, {
+        parse_mode: "MarkdownV2",
+        reply_markup: keyboard,
+      });
 
-    // Отправляем оффер с inline-кнопкой
-    await bot.api.sendMessage(chatId, OFFER_TEXT, {
-      parse_mode: "MarkdownV2",
-      reply_markup: keyboard,
-    });
+    } else if (step === 2) {
+      // ШАГ 2: Через 60 минут отправляем дожим с фото и рассказом о похудении
+      // URL картинки из Vercel public-папки
+      const imageUrl = `${process.env.WEBHOOK_URL.replace("/api/webhook", "")}/offer.png`;
+      await bot.api.sendPhoto(chatId, imageUrl, {
+        caption: DOJIM_CAPTION,
+        parse_mode: "MarkdownV2",
+        reply_markup: keyboard,
+      });
+    }
 
     return res.status(200).json({ ok: true });
   } catch (e) {
@@ -70,6 +73,3 @@ async function handler(req, res) {
     return res.status(500).json({ ok: false, error: String(e) });
   }
 }
-
-// Убираем верификацию QStash временно, так как она может конфликтовать с Vercel Functions
-export default handler;

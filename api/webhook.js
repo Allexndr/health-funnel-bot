@@ -45,12 +45,18 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  // 2. Ставим задачу в QStash — отправить дожим через 5 минут
+  // 2. Ставим задачу в QStash — первый дожим через 5 минут (шаг 1)
   try {
     await qstash.publishJSON({
       url: process.env.DOJIM_URL,
       delay: 300, // 300 секунд = 5 минут
-      body: { chatId: String(chatId) },
+      body: { chatId: String(chatId), step: 1 },
+    });
+    // 3. Ставим задачу в QStash — второй дожим через 60 минут (шаг 2)
+    await qstash.publishJSON({
+      url: process.env.DOJIM_URL,
+      delay: 3600, // 3600 секунд = 60 минут
+      body: { chatId: String(chatId), step: 2 },
     });
   } catch (e) {
     console.error("QStash error:", e);
