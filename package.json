@@ -1,0 +1,17 @@
+{
+  "name": "voronka-razbor-vzdutie",
+  "version": "1.0.0",
+  "description": "Telegram воронка с дожимом — Лариса, разбор вздутия",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "grammy": "^1.30.0",
+    "@upstash/qstash": "^2.7.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
