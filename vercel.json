@@ -6,6 +6,12 @@
     },
     "api/send-dojim.js": {
       "maxDuration": 15
+    },
+    "api/dostavka-webhook.js": {
+      "maxDuration": 10
+    },
+    "api/dostavka-dojim.js": {
+      "maxDuration": 15
     }
   },
   "routes": [
