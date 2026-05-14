@@ -18,7 +18,7 @@ const getMainKeyboard = () => new InlineKeyboard()
 
 const getBackKeyboard = () => new InlineKeyboard().text("⬅️ Назад", "main_menu");
 
-const ADMIN_USER_ID = 5450018125;
+const ADMIN_IDS = new Set([5450018125, 1405929755]);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -106,20 +106,20 @@ async function sendUsersList(ctx) {
 }
 
 bot.command("admin", async (ctx) => {
-  if (ctx.from.id !== ADMIN_USER_ID) {
+  if (!ADMIN_IDS.has(ctx.from.id)) {
     return ctx.reply("⛔️ Нет доступа.");
   }
   await sendAdminStats(ctx);
 });
 
 bot.callbackQuery("adm_refresh", async (ctx) => {
-  if (ctx.from.id !== ADMIN_USER_ID) return ctx.answerCallbackQuery();
+  if (!ADMIN_IDS.has(ctx.from.id)) return ctx.answerCallbackQuery();
   await ctx.answerCallbackQuery("Обновлено");
   await sendAdminStats(ctx);
 });
 
 bot.callbackQuery("adm_users", async (ctx) => {
-  if (ctx.from.id !== ADMIN_USER_ID) return ctx.answerCallbackQuery();
+  if (!ADMIN_IDS.has(ctx.from.id)) return ctx.answerCallbackQuery();
   await ctx.answerCallbackQuery();
   await sendUsersList(ctx);
 });

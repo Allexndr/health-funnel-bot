@@ -22,14 +22,14 @@ const WELCOME_TEXT = `
 
 // ─── Команда /admin ─────────────────────────────────────────────────────────
 
-const ADMIN_USER_ID = 5450018125;
+const ADMIN_IDS = new Set([5450018125, 1405929755]);
 const ADMIN_SECRET = process.env.ADMIN_SECRET || "vzdutie_admin_secret_x9K2mN4pQ7rT";
 const BASE_URL = process.env.WEBHOOK_URL
   ? process.env.WEBHOOK_URL.replace("/api/webhook", "")
   : "https://voronkarazborvzdutie.vercel.app";
 
 bot.command("admin", async (ctx) => {
-  if (ctx.from.id !== ADMIN_USER_ID) {
+  if (!ADMIN_IDS.has(ctx.from.id)) {
     return ctx.reply("⛔️ Нет доступа.");
   }
   const url = `${BASE_URL}/api/admin?secret=${ADMIN_SECRET}`;
