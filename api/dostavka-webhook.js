@@ -94,14 +94,55 @@ async function sendUsersList(ctx) {
   }
 
   let text = `👥 *Последние 20 пользователей:*\n\n`;
+  const keyboard = new InlineKeyboard();
   for (const u of users) {
     const name = u.first_name || "—";
     const username = u.username ? `@${u.username}` : `id:${u.user_id}`;
     const lastAction = ACTION_LABELS[u.action] || u.action;
-    text += `• ${name} (${username})\n  └ ${lastAction} — ${fmtDate(u.created_at)}\n`;
+    text += `• ${name} (${username})\n  └ ${lastAction}\n`;
+    keyboard.text(`👤 ${name}`, `adm_user_${u.user_id}`).row();
+  }
+  keyboard.text("⬅️ Назад", "adm_refresh");
+
+  await ctx.reply(text, { parse_mode: "Markdown", reply_markup: keyboard });
+}
+
+async function sendUserFlow(ctx, userId) {
+  const { data } = await supabase
+    .from("user_events")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (!data || !data.length) {
+    return ctx.reply("Нет данных для этого пользователя.");
   }
 
-  const keyboard = new InlineKeyboard().text("⬅️ Назад", "adm_refresh");
+  const user = data[0];
+  const name = user.first_name || "—";
+  const username = user.username ? `@${user.username}` : `id:${user.user_id}`;
+
+  let text = `🔍 *Флоу пользователя:*\n\n`;
+  text += `👤 ${name} (${username})\n`;
+  text += `🆔 ID: ${user.user_id}\n\n`;
+  text += `*История действий:*\n\n`;
+
+  for (let i = 0; i < data.length; i++) {
+    const event = data[i];
+    const label = ACTION_LABELS[event.action] || event.action;
+    const time = fmtDate(event.created_at);
+    
+    if (i === 0) {
+      text += `🚀 ${label}\n   └ ${time}\n`;
+    } else {
+      text += `   ↓\n`;
+      text += `   ${label}\n   └ ${time}\n`;
+    }
+  }
+
+  const keyboard = new InlineKeyboard()
+    .text("⬅️ Назад к юзерам", "adm_users");
+
   await ctx.reply(text, { parse_mode: "Markdown", reply_markup: keyboard });
 }
 
@@ -116,6 +157,13 @@ bot.callbackQuery("adm_refresh", async (ctx) => {
   if (!ADMIN_IDS.has(ctx.from.id)) return ctx.answerCallbackQuery();
   await ctx.answerCallbackQuery("Обновлено");
   await sendAdminStats(ctx);
+});
+
+bot.callbackQuery(/^adm_user_(\d+)$/, async (ctx) => {
+  if (!ADMIN_IDS.has(ctx.from.id)) return ctx.answerCallbackQuery();
+  await ctx.answerCallbackQuery();
+  const userId = Number(ctx.match[1]);
+  await sendUserFlow(ctx, userId);
 });
 
 bot.callbackQuery("adm_users", async (ctx) => {
