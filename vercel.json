@@ -12,6 +12,9 @@
     },
     "api/dostavka-dojim.js": {
       "maxDuration": 15
+    },
+    "api/admin.js": {
+      "maxDuration": 10
     }
   },
   "routes": [

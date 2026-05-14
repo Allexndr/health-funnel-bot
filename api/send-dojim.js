@@ -1,5 +1,6 @@
 // api/send-dojim.js — Дожим (вызывается QStash через 5 мин и 60 мин)
 import { Bot, InlineKeyboard } from "grammy";
+import { track } from "../lib/track.js";
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
@@ -55,6 +56,7 @@ export default async function handler(req, res) {
         parse_mode: "MarkdownV2",
         reply_markup: keyboard,
       });
+      await track({ userId: chatId, bot: "main", action: "dojim_1" });
 
     } else if (step === 2) {
       // ШАГ 2: Через 60 минут отправляем дожим с фото и рассказом о похудении
@@ -65,6 +67,7 @@ export default async function handler(req, res) {
         parse_mode: "MarkdownV2",
         reply_markup: keyboard,
       });
+      await track({ userId: chatId, bot: "main", action: "dojim_2" });
     }
 
     return res.status(200).json({ ok: true });

@@ -2,6 +2,7 @@
 import { Bot, webhookCallback, InlineKeyboard } from "grammy";
 import { Client } from "@upstash/qstash";
 import { WELCOME_TEXT, DESC_LIFE_PRIME, DESC_META_GREEN, BUTTONS, CONTACTS } from "../dostavka/content.js";
+import { track } from "../lib/track.js";
 
 const bot = new Bot(process.env.BOT_TOKEN_DOSTAVKA);
 const qstash = new Client({ token: process.env.QSTASH_TOKEN });
@@ -17,6 +18,14 @@ const getMainKeyboard = () => new InlineKeyboard()
 const getBackKeyboard = () => new InlineKeyboard().text("⬅️ Назад", "main_menu");
 
 bot.command("start", async (ctx) => {
+  await track({
+    userId:    ctx.from.id,
+    username:  ctx.from?.username,
+    firstName: ctx.from?.first_name,
+    bot:       "dostavka",
+    action:    "start",
+  });
+
   await ctx.reply(WELCOME_TEXT, {
     parse_mode: "MarkdownV2",
     reply_markup: getMainKeyboard(),
@@ -38,6 +47,13 @@ bot.command("start", async (ctx) => {
 
 bot.callbackQuery("main_menu", async (ctx) => {
   await ctx.answerCallbackQuery();
+  await track({
+    userId:    ctx.from.id,
+    username:  ctx.from?.username,
+    firstName: ctx.from?.first_name,
+    bot:       "dostavka",
+    action:    "btn_main_menu",
+  });
   await ctx.editMessageText(WELCOME_TEXT, {
     parse_mode: "MarkdownV2",
     reply_markup: getMainKeyboard(),
@@ -46,6 +62,13 @@ bot.callbackQuery("main_menu", async (ctx) => {
 
 bot.callbackQuery("desc_life", async (ctx) => {
   await ctx.answerCallbackQuery();
+  await track({
+    userId:    ctx.from.id,
+    username:  ctx.from?.username,
+    firstName: ctx.from?.first_name,
+    bot:       "dostavka",
+    action:    "btn_desc_life",
+  });
   await ctx.editMessageText(DESC_LIFE_PRIME, {
     parse_mode: "MarkdownV2",
     reply_markup: getBackKeyboard(),
@@ -54,6 +77,13 @@ bot.callbackQuery("desc_life", async (ctx) => {
 
 bot.callbackQuery("desc_meta", async (ctx) => {
   await ctx.answerCallbackQuery();
+  await track({
+    userId:    ctx.from.id,
+    username:  ctx.from?.username,
+    firstName: ctx.from?.first_name,
+    bot:       "dostavka",
+    action:    "btn_desc_meta",
+  });
   await ctx.editMessageText(DESC_META_GREEN, {
     parse_mode: "MarkdownV2",
     reply_markup: getBackKeyboard(),
@@ -62,6 +92,13 @@ bot.callbackQuery("desc_meta", async (ctx) => {
 
 bot.callbackQuery("more_info", async (ctx) => {
   await ctx.answerCallbackQuery();
+  await track({
+    userId:    ctx.from.id,
+    username:  ctx.from?.username,
+    firstName: ctx.from?.first_name,
+    bot:       "dostavka",
+    action:    "btn_more_info",
+  });
   await ctx.editMessageText("Для получения подробной консультации напишите нам в личные сообщения\\:", {
     reply_markup: new InlineKeyboard()
       .url("✍️ Написать менеджеру", CONTACTS.TELEGRAM).row()

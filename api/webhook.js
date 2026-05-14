@@ -1,6 +1,7 @@
 // api/webhook.js — Главный обработчик вебхука Telegram
 import { Bot, webhookCallback, InlineKeyboard } from "grammy";
 import { Client } from "@upstash/qstash";
+import { track } from "../lib/track.js";
 
 const bot = new Bot(process.env.BOT_TOKEN);
 const qstash = new Client({ token: process.env.QSTASH_TOKEN });
@@ -23,6 +24,14 @@ const WELCOME_TEXT = `
 
 bot.command("start", async (ctx) => {
   const chatId = ctx.chat.id;
+
+  await track({
+    userId:    chatId,
+    username:  ctx.from?.username,
+    firstName: ctx.from?.first_name,
+    bot:       "main",
+    action:    "start",
+  });
 
   try {
     // 1. Отправляем видео YouTube
