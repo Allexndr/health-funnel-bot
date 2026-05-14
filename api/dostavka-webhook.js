@@ -17,6 +17,22 @@ const getMainKeyboard = () => new InlineKeyboard()
 
 const getBackKeyboard = () => new InlineKeyboard().text("⬅️ Назад", "main_menu");
 
+const ADMIN_USER_ID = 5450018125;
+const ADMIN_SECRET = process.env.ADMIN_SECRET || "vzdutie_admin_secret_x9K2mN4pQ7rT";
+const BASE_URL = process.env.WEBHOOK_URL
+  ? process.env.WEBHOOK_URL.replace("/api/dostavka-webhook", "").replace("/api/webhook", "")
+  : "https://voronkarazborvzdutie.vercel.app";
+
+bot.command("admin", async (ctx) => {
+  if (ctx.from.id !== ADMIN_USER_ID) {
+    return ctx.reply("⛔️ Нет доступа.");
+  }
+  const url = `${BASE_URL}/api/admin?secret=${ADMIN_SECRET}`;
+  await ctx.reply(`🔐 *Панель аналитики:*\n\n[Открыть админку](${url})`, {
+    parse_mode: "MarkdownV2",
+  });
+});
+
 bot.command("start", async (ctx) => {
   await track({
     userId:    ctx.from.id,
