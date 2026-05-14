@@ -3,6 +3,7 @@ import { Bot, webhookCallback, InlineKeyboard } from "grammy";
 import { Client } from "@upstash/qstash";
 import { WELCOME_TEXT, DESC_LIFE_PRIME, DESC_META_GREEN, BUTTONS, CONTACTS } from "../dostavka/content.js";
 import { track } from "../lib/track.js";
+import { createClient } from "@supabase/supabase-js";
 
 const bot = new Bot(process.env.BOT_TOKEN_DOSTAVKA);
 const qstash = new Client({ token: process.env.QSTASH_TOKEN });
@@ -18,19 +19,109 @@ const getMainKeyboard = () => new InlineKeyboard()
 const getBackKeyboard = () => new InlineKeyboard().text("⬅️ Назад", "main_menu");
 
 const ADMIN_USER_ID = 5450018125;
-const ADMIN_SECRET = process.env.ADMIN_SECRET || "vzdutie_admin_secret_x9K2mN4pQ7rT";
-const BASE_URL = process.env.WEBHOOK_URL
-  ? process.env.WEBHOOK_URL.replace("/api/dostavka-webhook", "").replace("/api/webhook", "")
-  : "https://voronkarazborvzdutie.vercel.app";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const ACTION_LABELS = {
+  start:         "🚀 /start",
+  dojim_1:       "⏱ Дожим 1 (5 мин)",
+  dojim_2:       "⏱ Дожим 2 (60 мин)",
+  btn_desc_life: "🧬 Описание Лай Витамина",
+  btn_desc_meta: "🌿 Описание Мета ГРИН",
+  btn_more_info: "ℹ️ Хочу узнать больше",
+  btn_main_menu: "🔙 Назад в меню",
+};
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleString("ru-RU", { timeZone: "Asia/Seoul", hour12: false });
+}
+
+async function sendAdminStats(ctx) {
+  const { data: statsRaw } = await supabase
+    .from("user_events")
+    .select("action");
+
+  const { count: totalUsers } = await supabase
+    .from("user_events")
+    .select("user_id", { count: "exact", head: true });
+
+  const { data: uniqueRaw } = await supabase
+    .from("user_events")
+    .select("user_id");
+
+  const uniqueIds = new Set((uniqueRaw || []).map(r => r.user_id));
+
+  const counts = {};
+  for (const row of (statsRaw || [])) {
+    counts[row.action] = (counts[row.action] || 0) + 1;
+  }
+
+  let text = `📊 *Аналитика воронки*\n`;
+  text += `👥 Уникальных пользователей: *${uniqueIds.size}*\n`;
+  text += `📝 Всего событий: *${(statsRaw || []).length}*\n\n`;
+  text += `*По действиям:*\n`;
+
+  for (const [action, label] of Object.entries(ACTION_LABELS)) {
+    text += `${label}: *${counts[action] || 0}*\n`;
+  }
+
+  const keyboard = new InlineKeyboard()
+    .text("👥 Последние юзеры", "adm_users").row()
+    .text("🔄 Обновить", "adm_refresh");
+
+  await ctx.reply(text, { parse_mode: "Markdown", reply_markup: keyboard });
+}
+
+async function sendUsersList(ctx) {
+  const { data } = await supabase
+    .from("user_events")
+    .select("user_id, username, first_name, action, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const seen = new Map();
+  for (const row of (data || [])) {
+    if (!seen.has(row.user_id)) seen.set(row.user_id, row);
+  }
+
+  const users = [...seen.values()].slice(0, 20);
+
+  if (!users.length) {
+    return ctx.reply("Пока нет данных.");
+  }
+
+  let text = `👥 *Последние 20 пользователей:*\n\n`;
+  for (const u of users) {
+    const name = u.first_name || "—";
+    const username = u.username ? `@${u.username}` : `id:${u.user_id}`;
+    const lastAction = ACTION_LABELS[u.action] || u.action;
+    text += `• ${name} (${username})\n  └ ${lastAction} — ${fmtDate(u.created_at)}\n`;
+  }
+
+  const keyboard = new InlineKeyboard().text("⬅️ Назад", "adm_refresh");
+  await ctx.reply(text, { parse_mode: "Markdown", reply_markup: keyboard });
+}
 
 bot.command("admin", async (ctx) => {
   if (ctx.from.id !== ADMIN_USER_ID) {
     return ctx.reply("⛔️ Нет доступа.");
   }
-  const url = `${BASE_URL}/api/admin?secret=${ADMIN_SECRET}`;
-  await ctx.reply(`🔐 *Панель аналитики:*\n\n[Открыть админку](${url})`, {
-    parse_mode: "MarkdownV2",
-  });
+  await sendAdminStats(ctx);
+});
+
+bot.callbackQuery("adm_refresh", async (ctx) => {
+  if (ctx.from.id !== ADMIN_USER_ID) return ctx.answerCallbackQuery();
+  await ctx.answerCallbackQuery("Обновлено");
+  await sendAdminStats(ctx);
+});
+
+bot.callbackQuery("adm_users", async (ctx) => {
+  if (ctx.from.id !== ADMIN_USER_ID) return ctx.answerCallbackQuery();
+  await ctx.answerCallbackQuery();
+  await sendUsersList(ctx);
 });
 
 bot.command("start", async (ctx) => {
